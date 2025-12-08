@@ -17,7 +17,7 @@ const AdminDashboard = () => {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   
-  // DATA STATES
+  // LIVE DATA STATES
   const [registrations, setRegistrations] = useState([]);
   const [events, setEvents] = useState([]);
   const [leaders, setLeaders] = useState([]);
@@ -56,7 +56,7 @@ const AdminDashboard = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  // FORMS (DEFAULTS)
+  // INPUT FORMS
   const defaultEvent = { title: '', date: '', time: '', location: '', description: '', image: '' };
   const defaultLeader = { name: '', role: '', phone: '', whatsapp: '', image: '' };
   const defaultResource = { title: '', type: 'PDF', size: '2 MB', link: '' };
@@ -77,7 +77,6 @@ const AdminDashboard = () => {
   const [newFaq, setNewFaq] = useState(defaultFaq);
   const [newVerse, setNewVerse] = useState(defaultVerse);
 
-  // REAL-TIME LISTENER
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((u) => {
       setUser(u);
@@ -141,7 +140,24 @@ const AdminDashboard = () => {
   const cancelEdit = (resetFn) => { resetFn(); setEditingId(null); setSelectedFile(null); setAudioFile(null); };
   const deleteItem = async (col, id) => { if(confirm("Futa kabisa?")) await deleteDoc(doc(db, col, id)); };
   
-  const handleSaveSettings = async () => { setIsSubmitting(true); try { let d={...settings}; if(selectedFile) d.heroImage=await uploadImage(selectedFile); await setDoc(doc(db,"settings","general"),d); setSettings(d); setSelectedFile(null); alert("Saved!"); } catch(e){alert(e.message);} setIsSubmitting(false); };
+  // FIX: Added { merge: true } here to protect other settings
+  const handleSaveSettings = async () => { 
+    setIsSubmitting(true); 
+    try { 
+      let finalData = { ...settings }; 
+      if (selectedFile) {
+        finalData.heroImage = await uploadImage(selectedFile); 
+      }
+      await setDoc(doc(db, "settings", "general"), finalData, { merge: true }); 
+      setSettings(finalData); 
+      setSelectedFile(null); 
+      alert("Settings Saved!"); 
+    } catch(e) { 
+      alert(e.message); 
+    } 
+    setIsSubmitting(false); 
+  };
+
   const handleSaveFeatured = async () => { setIsSubmitting(true); try { let d={...featuredSession}; if(selectedFile) d.image=await uploadImage(selectedFile); await setDoc(doc(db,"settings","featuredSession"),d); setFeaturedSession(d); setSelectedFile(null); alert("Updated!"); } catch(e){alert(e.message);} setIsSubmitting(false); };
   const addCustomLink = () => setSettings({ ...settings, customLinks: [...settings.customLinks, { name: '', url: '' }] });
   const updateCustomLink = (idx, field, val) => { const l = [...settings.customLinks]; l[idx][field] = val; setSettings({...settings, customLinks: l}); };
@@ -188,7 +204,6 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* --- MEMBERS (HAPA NIMEBORESHA SCROLL) --- */}
         {activeTab === 'members' && (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
             <div className="p-4 border-b flex flex-wrap gap-2 justify-between items-center bg-slate-50/50">
@@ -198,7 +213,7 @@ const AdminDashboard = () => {
               </div>
               <button onClick={handleExportMembers} className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-1 shadow-sm"><Download size={16}/> CSV</button>
             </div>
-            {/* OVERFLOW FIX: Hii inaruhusu table kusogea kwenye simu */}
+            {/* OVERFLOW FIX */}
             <div className="w-full overflow-x-auto">
               <table className="w-full text-left text-sm min-w-[800px]">
                 <thead className="bg-slate-50 text-slate-500 font-bold uppercase"><tr><th className="p-4">Name</th><th className="p-4">Reg No</th><th className="p-4">Phone</th><th className="p-4">Ministry</th><th className="p-4 text-right">Actions</th></tr></thead>
@@ -217,17 +232,12 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
-        
-        {/* MEMBER DETAILS MODAL */}
         {selectedMember && (<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={()=>setSelectedMember(null)}><div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={e=>e.stopPropagation()}><div className="bg-blue-600 p-6 text-white flex justify-between"><div><h2 className="text-xl font-bold">{selectedMember.firstName} {selectedMember.lastName}</h2><p className="text-blue-100 text-sm">{selectedMember.regNo}</p></div><button onClick={()=>setSelectedMember(null)}><X size={24}/></button></div><div className="p-6 space-y-4 bg-slate-50"><div className="grid grid-cols-2 gap-4"><div className="bg-white p-3 rounded border"><span className="text-xs text-slate-400 block">Phone</span><span className="font-bold">{selectedMember.phone}</span></div><div className="bg-white p-3 rounded border"><span className="text-xs text-slate-400 block">Course</span><span className="font-bold">{selectedMember.course}</span></div><div className="bg-white p-3 rounded border"><span className="text-xs text-slate-400 block">Year</span><span className="font-bold">{selectedMember.year}</span></div><div className="bg-white p-3 rounded border"><span className="text-xs text-slate-400 block">Gender</span><span className="font-bold">{selectedMember.gender}</span></div></div><div className="bg-white p-4 rounded border"><h4 className="font-bold text-blue-600 text-sm mb-2">Spiritual Info</h4><div className="grid grid-cols-2 gap-y-2 text-sm"><span className="text-slate-500">Ministry:</span> <span className="font-bold">{selectedMember.ministry}</span><span className="text-slate-500">Baptized:</span> <span className="font-bold">{selectedMember.baptismStatus}</span><span className="text-slate-500">Home Church:</span> <span className="font-bold">{selectedMember.homeChurch}</span></div></div><div className="bg-white p-3 rounded border"><span className="text-xs text-slate-400 block">Email</span><span className="text-sm">{selectedMember.email}</span></div></div></div></div>)}
 
-        {/* SETTINGS */}
         {activeTab === 'settings' && (<div className="bg-white p-8 rounded-2xl border border-slate-100 max-w-3xl mx-auto"><h3 className="font-bold text-xl mb-6">Settings</h3><div className="space-y-6"><div className="p-4 bg-slate-50 rounded-xl border border-slate-200"><h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Brand</h4><input className="w-full p-2 border rounded mb-2" placeholder="Title" value={settings.heroTitle} onChange={e=>setSettings({...settings, heroTitle:e.target.value})} /><textarea className="w-full p-2 border rounded mb-2" placeholder="Subtitle" value={settings.heroSubtitle} onChange={e=>setSettings({...settings, heroSubtitle:e.target.value})} /><FileUploadBox label="Hero Image" accept="image/*" onChange={e=>setSelectedFile(e.target.files[0])} file={selectedFile} /></div><div className="p-4 bg-slate-50 rounded-xl border border-slate-200"><h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Links</h4><div className="grid grid-cols-2 gap-3"><input className="p-2 border rounded" placeholder="WhatsApp" value={settings.whatsapp} onChange={e=>setSettings({...settings, whatsapp:e.target.value})} /><input className="p-2 border rounded" placeholder="Instagram" value={settings.instagram} onChange={e=>setSettings({...settings, instagram:e.target.value})} /><input className="p-2 border rounded" placeholder="TikTok" value={settings.tiktok} onChange={e=>setSettings({...settings, tiktok:e.target.value})} /><input className="p-2 border rounded" placeholder="YouTube" value={settings.youtube} onChange={e=>setSettings({...settings, youtube:e.target.value})} /></div><div className="border-t pt-3 mt-3"><label className="text-xs font-bold text-blue-600 block mb-2">Custom Links</label>{settings.customLinks.map((link, i) => (<div key={i} className="flex gap-2 mb-2"><input className="w-1/3 p-2 border rounded text-xs" value={link.name} onChange={e=>updateCustomLink(i,'name',e.target.value)}/><input className="w-2/3 p-2 border rounded text-xs" value={link.url} onChange={e=>updateCustomLink(i,'url',e.target.value)}/><button onClick={()=>removeCustomLink(i)} className="text-red-500"><X size={16}/></button></div>))}<button onClick={addCustomLink} className="text-xs flex items-center gap-1 text-blue-600 font-bold hover:underline"><Plus size={14}/> Add Link</button></div></div><div className="p-4 bg-slate-50 rounded-xl border border-slate-200"><h4 className="text-xs font-bold text-slate-500 uppercase mb-3">Finance</h4><div className="grid grid-cols-2 gap-3"><input className="p-2 border rounded" placeholder="Number" value={settings.paymentNumber} onChange={e=>setSettings({...settings, paymentNumber:e.target.value})} /><input className="p-2 border rounded" placeholder="Name" value={settings.paymentName} onChange={e=>setSettings({...settings, paymentName:e.target.value})} /></div></div><button disabled={isSubmitting} onClick={handleSaveSettings} className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold">Save Settings</button></div></div>)}
         
-        {/* MESSAGES */}
         {activeTab === 'messages' && <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">{messages.map(m=><div key={m.id} className="p-4 border-b hover:bg-slate-50 flex justify-between"><div><h4 className="font-bold">{m.firstName} {m.lastName}</h4><p className="text-sm text-slate-600">{m.message}</p></div><button onClick={()=>deleteItem("messages", m.id)} className="text-red-500"><Trash2 size={16}/></button></div>)}</div>}
         
-        {/* PROGRAMS */}
         {activeTab === 'programs' && <div className="grid md:grid-cols-3 gap-8"><div className="bg-blue-50 p-6 rounded-2xl border border-blue-100"><h3 className="font-bold text-blue-800 mb-4">Somo la Leo</h3><div className="space-y-3"><input className="w-full p-2 border rounded bg-white" placeholder="Topic" value={featuredSession.topic} onChange={e=>setFeaturedSession({...featuredSession, topic:e.target.value})} /><input className="w-full p-2 border rounded bg-white" placeholder="Speaker" value={featuredSession.speaker} onChange={e=>setFeaturedSession({...featuredSession, speaker:e.target.value})} /><input className="w-full p-2 border rounded bg-white" placeholder="Time" value={featuredSession.date} onChange={e=>setFeaturedSession({...featuredSession, date:e.target.value})} /><FileUploadBox label="Poster" accept="image/*" onChange={e=>setSelectedFile(e.target.files[0])} file={selectedFile} /><button disabled={isSubmitting} onClick={handleSaveFeatured} className="w-full bg-blue-600 text-white py-2 rounded-lg font-bold">Update</button></div></div><div className="md:col-span-2 space-y-4"><div className={`bg-white p-6 rounded-2xl border ${editingId?'border-yellow-400':''}`}><h3 className="font-bold mb-3">{editingId?'Edit':'Add'} Program</h3><div className="grid grid-cols-2 gap-3 mb-3"><input className="p-2 border rounded" placeholder="Day" value={newProgram.day} onChange={e=>setNewProgram({...newProgram, day:e.target.value})}/><input className="p-2 border rounded" placeholder="Title" value={newProgram.title} onChange={e=>setNewProgram({...newProgram, title:e.target.value})}/></div><textarea className="w-full p-2 border rounded mb-3" placeholder="Desc" value={newProgram.desc} onChange={e=>setNewProgram({...newProgram, desc:e.target.value})}/><div className="flex gap-2"><button onClick={()=>handleAddItem("programs", newProgram, ()=>setNewProgram(defaultProgram), null)} className="flex-1 bg-slate-900 text-white py-2 rounded font-bold">{editingId?'Update':'Add'}</button>{editingId&&<button onClick={()=>cancelEdit(()=>setNewProgram(defaultProgram))} className="text-red-500 px-2">X</button>}</div></div><div className="space-y-2">{programs.map(p=><div key={p.id} className="flex justify-between p-4 bg-white border rounded-xl"><div><span className="font-bold">{p.day}:</span> {p.title}</div><div className="flex gap-2"><button onClick={()=>startEdit(p, setNewProgram)} className="text-blue-600"><Edit2 size={16}/></button><button onClick={()=>deleteItem("programs", p.id)} className="text-red-600"><Trash2 size={16}/></button></div></div>)}</div></div></div>}
         {activeTab === 'songs' && <div className="grid md:grid-cols-3 gap-6"><div className={`bg-white p-6 rounded-xl border h-fit space-y-4 ${editingId ? 'border-yellow-400' : ''}`}><h3 className="font-bold">{editingId?'Edit':'Add'} Song</h3><input className="w-full p-2 border rounded" placeholder="Title" value={newSong.title} onChange={e=>setNewSong({...newSong, title:e.target.value})}/><FileUploadBox label="MP3" accept="audio/*" onChange={e=>setAudioFile(e.target.files[0])} file={audioFile}/><FileUploadBox label="Cover" accept="image/*" onChange={e=>setSelectedFile(e.target.files[0])} file={selectedFile}/><div className="flex gap-2"><button disabled={isSubmitting} onClick={()=>handleAddItem("songs", newSong, ()=>setNewSong(defaultSong), null, 'cover', 'image')} className="flex-1 bg-blue-600 text-white py-2 rounded font-bold">{editingId?'Update':'Add'}</button>{editingId&&<button onClick={()=>cancelEdit(()=>setNewSong(defaultSong))} className="text-red-500 px-2">X</button>}</div></div><div className="md:col-span-2 space-y-2">{songs.map(s=><div key={s.id} className="bg-white p-4 border rounded flex justify-between items-center"><div className="flex gap-3 items-center"><img src={s.cover||"https://via.placeholder.com/40"} className="w-10 h-10 rounded object-cover"/><span className="font-bold">{s.title}</span></div><div className="flex gap-2"><button onClick={()=>startEdit(s, setNewSong)} className="text-blue-600"><Edit2 size={16}/></button><button onClick={()=>deleteItem("songs", s.id)} className="text-red-600"><Trash2 size={16}/></button></div></div>)}</div></div>}
         {activeTab === 'leaders' && <div className="grid md:grid-cols-3 gap-6"><div className={`bg-white p-6 rounded-xl border h-fit space-y-4 ${editingId ? 'border-yellow-400' : ''}`}><h3 className="font-bold">{editingId?'Edit':'Add'} Leader</h3><input className="w-full p-2 border rounded" placeholder="Name" value={newLeader.name} onChange={e=>setNewLeader({...newLeader, name:e.target.value})}/><input className="w-full p-2 border rounded" placeholder="Role" value={newLeader.role} onChange={e=>setNewLeader({...newLeader, role:e.target.value})}/><input className="w-full p-2 border rounded" placeholder="Phone" value={newLeader.phone} onChange={e=>setNewLeader({...newLeader, phone:e.target.value})}/><input className="w-full p-2 border rounded" placeholder="WhatsApp" value={newLeader.whatsapp} onChange={e=>setNewLeader({...newLeader, whatsapp:e.target.value})}/><FileUploadBox label="Photo" accept="image/*" onChange={e=>setSelectedFile(e.target.files[0])} file={selectedFile}/><div className="flex gap-2"><button disabled={isSubmitting} onClick={()=>handleAddItem("leaders", newLeader, ()=>setNewLeader(defaultLeader), null, 'image', 'image')} className="flex-1 bg-blue-600 text-white py-2 rounded font-bold">{editingId?'Update':'Add'}</button>{editingId&&<button onClick={()=>cancelEdit(()=>setNewLeader(defaultLeader))} className="text-red-500 px-2">X</button>}</div></div><div className="md:col-span-2 grid grid-cols-2 gap-2">{leaders.map(l=><div key={l.id} className="bg-white p-4 border rounded flex justify-between items-center"><div className="flex gap-2 items-center"><img src={l.image} className="w-8 h-8 rounded-full bg-slate-100 object-cover"/><div><p className="text-sm font-bold">{l.name}</p><p className="text-xs text-slate-500">{l.role}</p></div></div><div className="flex gap-2"><button onClick={()=>startEdit(l, setNewLeader)} className="text-blue-600"><Edit2 size={16}/></button><button onClick={()=>deleteItem("leaders", l.id)} className="text-red-600"><Trash2 size={16}/></button></div></div>)}</div></div>}

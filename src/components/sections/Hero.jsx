@@ -8,25 +8,39 @@ import RegistrationModal from '../ui/RegistrationModal';
 
 const Hero = () => {
   const { t } = useLanguage();
-  const [heroData, setHeroData] = useState({ title: '', subtitle: '', image: '' });
+  // 1. STATE: Tunahakikisha inalingana na majina ya Admin (heroTitle, heroSubtitle)
+  const [heroData, setHeroData] = useState({ 
+    heroTitle: '', 
+    heroSubtitle: '', 
+    heroImage: '' 
+  });
   const [isRegOpen, setIsRegOpen] = useState(false);
 
+  // 2. FETCH DATA: Tunavuta data kutoka 'settings/general'
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "settings", "general"), (doc) => {
-      if (doc.exists()) setHeroData(doc.data());
+      if (doc.exists()) {
+        setHeroData(doc.data());
+      }
     });
     return unsub;
   }, []);
 
   const scrollToSection = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-  const bgImage = heroData.image || "https://images.unsplash.com/photo-1523580494863-6f3031224c94?q=80&w=2073&auto=format&fit=crop";
+  
+  // 3. IMAGE LOGIC: Tumia picha ya Admin, au Default ikikosekana
+  const bgImage = heroData.heroImage || "https://images.unsplash.com/photo-1523580494863-6f3031224c94?q=80&w=2073&auto=format&fit=crop";
 
   return (
     <section id="hero" className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-slate-900">
       
       {/* BACKGROUND */}
       <div className="absolute inset-0 z-0">
-        <img src={bgImage} alt="Hero" className="w-full h-full object-cover transition-transform duration-[10s] hover:scale-105" />
+        <img 
+          src={bgImage} 
+          alt="Hero" 
+          className="w-full h-full object-cover transition-transform duration-[10s] hover:scale-105" 
+        />
         <div className="absolute inset-0 bg-gradient-to-r from-blue-950/95 via-blue-900/80 to-blue-900/40"></div>
       </div>
 
@@ -40,20 +54,21 @@ const Hero = () => {
           </Reveal>
 
           <Reveal width="100%" delay={0.1}>
+            {/* HAPA: Tunatumia heroTitle kutoka Admin */}
             <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-tight mb-6 drop-shadow-lg">
-              {heroData.title || t('hero.title')}
+              {heroData.heroTitle || t('hero.title')}
             </h1>
           </Reveal>
 
           <Reveal width="100%" delay={0.2}>
+            {/* HAPA: Tunatumia heroSubtitle kutoka Admin */}
             <p className="text-lg md:text-xl text-slate-200 leading-relaxed mb-10 border-l-4 border-yellow-500 pl-6">
-              {heroData.subtitle || t('hero.subtitle')}
+              {heroData.heroSubtitle || t('hero.subtitle')}
             </p>
           </Reveal>
 
           <Reveal width="100%" delay={0.3}>
             <div className="flex flex-wrap gap-4">
-              {/* PRIMARY BUTTON - SMOOTH HOVER */}
               <button 
                 onClick={() => setIsRegOpen(true)}
                 className="group relative px-8 py-4 bg-blue-600 text-white rounded-full font-bold text-lg overflow-hidden transition-all hover:shadow-[0_0_20px_rgba(37,99,235,0.6)] hover:-translate-y-1"
@@ -62,11 +77,9 @@ const Hero = () => {
                   {t('hero.btn_join')} 
                   <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform"/>
                 </div>
-                {/* Shine Effect */}
                 <div className="absolute inset-0 -translate-x-full group-hover:translate-x-0 bg-white/20 transition-transform duration-300"></div>
               </button>
 
-              {/* SECONDARY BUTTON */}
               <button 
                 onClick={() => scrollToSection('choir')}
                 className="px-8 py-4 bg-white text-blue-900 rounded-full font-bold text-lg transition-all hover:bg-slate-100 hover:shadow-lg hover:-translate-y-1 flex items-center gap-2"
