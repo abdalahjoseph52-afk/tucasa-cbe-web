@@ -28,10 +28,10 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
           
-          {/* LOGO - BIGGER & SHARPER */}
+          {/* LOGO - PREMIUM & BIGGER */}
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => window.scrollTo(0,0)}>
-            {/* Increased height to h-14/h-16 for visibility */}
-            <TucasaLogo className="h-14 md:h-16 w-auto drop-shadow-md group-hover:scale-110 transition-transform duration-300" />
+            {/* Logo kubwa zaidi na yenye animation ndogo ikiguswa */}
+            <TucasaLogo className="h-14 md:h-16 w-auto drop-shadow-md group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300" />
             <div className="hidden md:block leading-tight">
               <span className={`block font-extrabold text-2xl tracking-tighter ${scrolled ? 'text-slate-900' : 'text-white drop-shadow-sm'}`}>TUCASA</span>
               <span className={`block text-[10px] font-bold tracking-[0.3em] uppercase ${scrolled ? 'text-blue-600' : 'text-yellow-400 drop-shadow-sm'}`}>CBE Chapter</span>

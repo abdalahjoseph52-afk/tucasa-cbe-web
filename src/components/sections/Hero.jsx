@@ -22,27 +22,25 @@ const Hero = () => {
   const bgImage = heroData.image || "https://images.unsplash.com/photo-1523580494863-6f3031224c94?q=80&w=2073&auto=format&fit=crop";
 
   return (
-    <section id="hero" className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-white">
+    <section id="hero" className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-slate-900">
       
-      {/* 1. BACKGROUND (Clean & Bright) */}
+      {/* BACKGROUND */}
       <div className="absolute inset-0 z-0">
-        <img src={bgImage} alt="Hero" className="w-full h-full object-cover" />
-        {/* Modern Gradient Overlay: Dark Blue to Transparent */}
+        <img src={bgImage} alt="Hero" className="w-full h-full object-cover transition-transform duration-[10s] hover:scale-105" />
         <div className="absolute inset-0 bg-gradient-to-r from-blue-950/95 via-blue-900/80 to-blue-900/40"></div>
       </div>
 
-      {/* 2. CONTENT (Aligned Left like Corporate Sites) */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-20">
         <div className="max-w-3xl">
           
           <Reveal width="100%">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-yellow-400 font-bold text-xs uppercase tracking-widest mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-yellow-400 font-bold text-xs uppercase tracking-widest mb-6 shadow-lg">
               <Star size={14} fill="currentColor" /> TUCASA CBE Chapter
             </div>
           </Reveal>
 
           <Reveal width="100%" delay={0.1}>
-            <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-tight mb-6">
+            <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-tight mb-6 drop-shadow-lg">
               {heroData.title || t('hero.title')}
             </h1>
           </Reveal>
@@ -55,19 +53,23 @@ const Hero = () => {
 
           <Reveal width="100%" delay={0.3}>
             <div className="flex flex-wrap gap-4">
-              {/* Primary Button (Solid Blue) */}
+              {/* PRIMARY BUTTON - SMOOTH HOVER */}
               <button 
                 onClick={() => setIsRegOpen(true)}
-                className="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-bold text-lg transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 flex items-center gap-2 group"
+                className="group relative px-8 py-4 bg-blue-600 text-white rounded-full font-bold text-lg overflow-hidden transition-all hover:shadow-[0_0_20px_rgba(37,99,235,0.6)] hover:-translate-y-1"
               >
-                {t('hero.btn_join')} 
-                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform"/>
+                <div className="relative z-10 flex items-center gap-2">
+                  {t('hero.btn_join')} 
+                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform"/>
+                </div>
+                {/* Shine Effect */}
+                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-0 bg-white/20 transition-transform duration-300"></div>
               </button>
 
-              {/* Secondary Button (White Outline) */}
+              {/* SECONDARY BUTTON */}
               <button 
                 onClick={() => scrollToSection('choir')}
-                className="px-8 py-4 bg-white text-blue-900 rounded-full font-bold text-lg transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 flex items-center gap-2"
+                className="px-8 py-4 bg-white text-blue-900 rounded-full font-bold text-lg transition-all hover:bg-slate-100 hover:shadow-lg hover:-translate-y-1 flex items-center gap-2"
               >
                 <Play size={20} fill="currentColor" />
                 {t('hero.btn_watch')}
