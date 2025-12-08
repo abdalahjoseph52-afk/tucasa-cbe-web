@@ -207,8 +207,21 @@ const AdminDashboard = () => {
             <button disabled={isSubmitting} onClick={() => handleSettingsSave('general', settings)} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold">{isSubmitting ? 'Saving...' : 'Save All Settings'}</button>
           </div>
         )}
+
+        {/* MEMBERS TABLE */}
+        {!isLoading && activeTab === 'members' && (
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="p-4 border-b flex justify-between bg-slate-50/50"><input placeholder="Search..." className="border p-2 rounded-lg w-full md:w-64" value={memberSearch} onChange={e => setMemberSearch(e.target.value)} /><button onClick={handleExportMembers} className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-1"><Download size={16}/> CSV</button></div>
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-left text-sm min-w-[800px]">
+                <thead className="bg-slate-50 text-slate-500 font-bold uppercase"><tr><th className="p-4">Name</th><th className="p-4">Phone</th><th className="p-4">Ministry</th><th className="p-4 text-right">Action</th></tr></thead>
+                <tbody>{filteredMembers.map(r => (<tr key={r.id} className="border-t hover:bg-blue-50/30"><td className="p-4 font-bold text-slate-700">{r.firstName} {r.lastName}</td><td className="p-4">{r.phone}</td><td className="p-4">{r.ministry}</td><td className="p-4 text-right flex justify-end gap-2"><button onClick={() => setSelectedMember(r)} className="p-2 bg-slate-100 text-blue-600 rounded"><Eye size={16}/></button></td></tr>))}</tbody>
+              </table>
+            </div>
+          </div>
+        )}
         
-        {/* ... (Other Tabs like Members, Messages, Overview) ... */}
+        {/* ... (Other Tabs like Messages, Overview) ... */}
 
         {/* UNIVERSAL MODAL (FIXED) */}
         {isModalOpen && (
