@@ -71,7 +71,7 @@ function App() {
               <p className="text-slate-400 text-sm leading-relaxed">{t('footer.brand_desc')}</p>
             </div>
 
-            {/* LINKS & ADDRESS GRID (Hapa ndipo paliporekebishwa) */}
+            {/* LINKS & ADDRESS GRID */}
             <div className="md:w-2/3 grid grid-cols-2 gap-8 md:gap-12">
               
               {/* Quick Links */}
@@ -114,7 +114,6 @@ function App() {
             </div>
           </div>
 
-          {/* BOTTOM BAR */}
           <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center text-[10px] md:text-xs text-slate-500 gap-4">
             <p>© 2025 TUCASA CBE. {t('footer.rights')}</p>
             <div className="flex gap-4">

@@ -56,7 +56,7 @@ const AdminDashboard = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  // INPUT FORMS
+  // FORMS (DEFAULTS)
   const defaultEvent = { title: '', date: '', time: '', location: '', description: '', image: '' };
   const defaultLeader = { name: '', role: '', phone: '', whatsapp: '', image: '' };
   const defaultResource = { title: '', type: 'PDF', size: '2 MB', link: '' };
@@ -140,7 +140,6 @@ const AdminDashboard = () => {
   const cancelEdit = (resetFn) => { resetFn(); setEditingId(null); setSelectedFile(null); setAudioFile(null); };
   const deleteItem = async (col, id) => { if(confirm("Futa kabisa?")) await deleteDoc(doc(db, col, id)); };
   
-  // FIX: Added { merge: true } here to protect other settings
   const handleSaveSettings = async () => { 
     setIsSubmitting(true); 
     try { 
@@ -148,6 +147,7 @@ const AdminDashboard = () => {
       if (selectedFile) {
         finalData.heroImage = await uploadImage(selectedFile); 
       }
+      // MERGE TRUE IS HERE
       await setDoc(doc(db, "settings", "general"), finalData, { merge: true }); 
       setSettings(finalData); 
       setSelectedFile(null); 
@@ -204,6 +204,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* MEMBERS: FIXED MOBILE SCROLL */}
         {activeTab === 'members' && (
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
             <div className="p-4 border-b flex flex-wrap gap-2 justify-between items-center bg-slate-50/50">
@@ -213,7 +214,6 @@ const AdminDashboard = () => {
               </div>
               <button onClick={handleExportMembers} className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-1 shadow-sm"><Download size={16}/> CSV</button>
             </div>
-            {/* OVERFLOW FIX */}
             <div className="w-full overflow-x-auto">
               <table className="w-full text-left text-sm min-w-[800px]">
                 <thead className="bg-slate-50 text-slate-500 font-bold uppercase"><tr><th className="p-4">Name</th><th className="p-4">Reg No</th><th className="p-4">Phone</th><th className="p-4">Ministry</th><th className="p-4 text-right">Actions</th></tr></thead>
