@@ -86,10 +86,13 @@ const AdminDashboard = () => {
 
   const closeModal = () => { setIsModalOpen(false); setFormData({}); setEditingId(null); };
 
+  // --- HII NDIO SEHEMU ILIYOREKEBISHWA KUTATUA TATIZO LA "NO DOCUMENT" ---
   const handleSave = async (col, fileField = 'image', fileType = 'image') => {
     setIsSubmitting(true);
     try {
       let payload = { ...formData };
+      
+      // Upload Logic
       if (selectedFile) {
         setUploadStatus("Uploading Image...");
         payload[fileField] = fileType === 'image' ? await uploadImage(selectedFile) : await uploadFile(selectedFile);
@@ -100,14 +103,19 @@ const AdminDashboard = () => {
       }
 
       if (editingId) {
-        await updateDoc(doc(db, col, editingId), payload);
+        // ERROR FIX: Tunatumia setDoc na { merge: true } badala ya updateDoc
+        // Hii inahakikisha kama document haipo, inaitengeneza badala ya kucrash.
+        await setDoc(doc(db, col, editingId), payload, { merge: true });
         success("Updated Successfully!");
       } else {
         await addDoc(collection(db, col), { ...payload, createdAt: serverTimestamp() });
         success("Added Successfully!");
       }
       closeModal();
-    } catch (err) { error(err.message); }
+    } catch (err) { 
+      console.error(err);
+      error("Tatizo: " + err.message); 
+    }
     setIsSubmitting(false); setUploadStatus('');
   };
 
@@ -130,6 +138,12 @@ const AdminDashboard = () => {
 
   // --- UI HELPERS ---
   const filteredMembers = data.registrations.filter(r => JSON.stringify(r).toLowerCase().includes(memberSearch.toLowerCase()));
+  const handleExportMembers = () => {
+    const h = ["Name,RegNo,Phone,Email,Course,Year,Ministry,Church,Baptized"];
+    const r = data.registrations.map(r => [r.firstName+" "+r.lastName, r.regNo, r.phone, r.email, r.course, r.year, r.ministry, r.homeChurch, r.baptismStatus].map(e=>`"${e||''}"`).join(","));
+    const l = document.createElement("a"); l.href = encodeURI("data:text/csv;charset=utf-8,"+ [h,...r].join("\n")); l.download="members.csv"; document.body.appendChild(l); l.click();
+  };
+
   const FileInput = ({ label, accept, onChange, file }) => (
     <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 cursor-pointer relative transition-colors">
       <input type="file" accept={accept} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={e => onChange(e.target.files[0])} />
@@ -277,7 +291,6 @@ const AdminDashboard = () => {
         {/* SETTINGS */}
         {activeTab === 'settings' && (
           <div className="max-w-3xl space-y-6">
-            {/* ... (Settings UI as before, no modal needed here) ... */}
             <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm"><h3 className="font-bold text-lg mb-4 text-blue-900">General</h3><input className="w-full p-3 border rounded-xl mb-3" placeholder="Hero Title" value={settings.heroTitle} onChange={e=>setSettings({...settings, heroTitle:e.target.value})} /><FileInput label="Hero Image" accept="image/*" onChange={setSelectedFile} file={selectedFile} /></div>
             <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm"><h3 className="font-bold text-lg mb-4 text-blue-900">Contacts & Social</h3><div className="grid grid-cols-2 gap-4"><input className="p-3 border rounded-xl" placeholder="Phone" value={settings.phone} onChange={e=>setSettings({...settings, phone:e.target.value})}/><input className="p-3 border rounded-xl" placeholder="WhatsApp" value={settings.whatsapp} onChange={e=>setSettings({...settings, whatsapp:e.target.value})}/></div></div>
             <button disabled={isSubmitting} onClick={() => handleSettingsSave('general', settings)} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold">{isSubmitting ? 'Saving...' : 'Save All Settings'}</button>
@@ -296,10 +309,10 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* MEMBERS TABLE (FIXED) */}
+        {/* MEMBERS TABLE */}
         {activeTab === 'members' && (
           <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-            <div className="p-4 border-b flex justify-between bg-slate-50/50"><input placeholder="Search..." className="border p-2 rounded-lg w-full md:w-64" value={memberSearch} onChange={e => setMemberSearch(e.target.value)} /><span className="text-xs font-bold bg-blue-100 text-blue-600 px-3 py-1 rounded-full">{data.registrations.length}</span></div>
+            <div className="p-4 border-b flex justify-between bg-slate-50/50"><input placeholder="Search..." className="border p-2 rounded-lg w-full md:w-64" value={memberSearch} onChange={e => setMemberSearch(e.target.value)} /><button onClick={handleExportMembers} className="bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-1"><Download size={16}/> CSV</button></div>
             <div className="w-full overflow-x-auto">
               <table className="w-full text-left text-sm min-w-[800px]">
                 <thead className="bg-slate-50 text-slate-500 font-bold uppercase"><tr><th className="p-4">Name</th><th className="p-4">Phone</th><th className="p-4">Ministry</th><th className="p-4 text-right">Action</th></tr></thead>
@@ -309,7 +322,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* GENERIC LISTS (Songs, Events, etc.) */}
+        {/* GENERIC LISTS */}
         {['events', 'songs', 'programs', 'leaders', 'resources', 'gallery', 'testimonials', 'faqs', 'verses'].includes(activeTab) && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {data[activeTab].map(item => (
@@ -328,7 +341,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* === UNIVERSAL MODAL (POP-UP FORM) === */}
+        {/* === UNIVERSAL MODAL === */}
         {isModalOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in zoom-in duration-200" onClick={closeModal}>
             <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
@@ -336,11 +349,7 @@ const AdminDashboard = () => {
                 <h3 className="font-extrabold text-xl text-slate-800 capitalize">{editingId ? 'Edit' : 'Add'} {activeTab.slice(0, -1)}</h3>
                 <button onClick={closeModal} className="p-2 hover:bg-slate-200 rounded-full"><X size={20}/></button>
               </div>
-              
-              <div className="p-6 overflow-y-auto flex-1 space-y-4">
-                {renderFormContent()}
-              </div>
-
+              <div className="p-6 overflow-y-auto flex-1 space-y-4">{renderFormContent()}</div>
               <div className="p-6 border-t border-slate-100 bg-slate-50">
                 <button disabled={isSubmitting} onClick={() => handleSave(activeTab, activeTab === 'resources' ? 'link' : activeTab === 'gallery' ? 'src' : activeTab === 'songs' ? 'cover' : 'image', activeTab === 'resources' ? 'file' : 'image')} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2">
                   {isSubmitting ? <><Loader2 className="animate-spin" size={20}/> {uploadStatus || "Saving..."}</> : "Save Changes"}
