@@ -5,7 +5,7 @@ import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { uploadImage, uploadFile } from '../../lib/uploadService';
 import { useToast } from '../../context/ToastContext';
 
-// ICONS (Nimehakikisha 'Mail' ipo hapa ili kuondoa error)
+// ICONS
 import { 
   Lock, LogOut, User, Calendar, Trash2, Edit2, Image as ImageIcon, Loader2, 
   Users, FileText, Music, FileAudio, HelpCircle, MessageCircle, BookOpen, 
@@ -81,6 +81,12 @@ const AdminDashboard = () => {
     setIsSubmitting(true);
     try {
       let payload = { ...formData };
+      
+      // Phone Number Formatting Logic
+      if (payload.phone && payload.phone.startsWith('0')) {
+        payload.phone = '255' + payload.phone.substring(1);
+      }
+
       if (selectedFile) { setUploadStatus("Uploading..."); payload[fileField] = fileType === 'image' ? await uploadImage(selectedFile) : await uploadFile(selectedFile); }
       if (col === 'songs' && audioFile) { setUploadStatus("Uploading Audio..."); payload.url = await uploadFile(audioFile); }
 
@@ -111,7 +117,34 @@ const AdminDashboard = () => {
   const addCustomLink = () => setSettings({ ...settings, customLinks: [...settings.customLinks, { name: '', url: '' }] });
   const removeCustomLink = (idx) => setSettings({...settings, customLinks: settings.customLinks.filter((_, i) => i !== idx)});
 
-  const handleExportMembers = () => { success("Exporting..."); };
+  const handleExportMembers = () => {
+    // Generate CSV Content
+    const headers = ["Name,RegNo,Phone,Email,Course,Year,Gender,Ministry,Church,Baptized,Date Joined"];
+    const rows = data.registrations.map(r => [
+      `"${r.firstName} ${r.lastName}"`,
+      `"${r.regNo}"`,
+      `"${r.phone}"`, // Format to ensure it's treated as string if needed
+      `"${r.email}"`,
+      `"${r.course}"`,
+      `"${r.year}"`,
+      `"${r.gender}"`,
+      `"${r.ministry}"`,
+      `"${r.homeChurch}"`,
+      `"${r.baptismStatus}"`,
+      `"${r.createdAt ? r.createdAt.toDate().toLocaleDateString() : ''}"`
+    ].join(","));
+    
+    const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "tucasa_members.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    success("Members exported successfully!"); 
+  };
+  
   const filteredMembers = data.registrations.filter(r => JSON.stringify(r).toLowerCase().includes(memberSearch.toLowerCase()));
 
   // UI Helper
@@ -158,13 +191,13 @@ const AdminDashboard = () => {
 
   const renderFormContent = () => {
     switch (activeTab) {
-      case 'events': return (<><input className="w-full p-4 border rounded-xl" placeholder="Title" value={formData.title||''} onChange={e=>setFormData({...formData, title:e.target.value})}/><div className="grid grid-cols-2 gap-3"><input type="date" className="p-4 border rounded-xl" value={formData.date||''} onChange={e=>setFormData({...formData, date:e.target.value})}/><input type="time" className="p-4 border rounded-xl" value={formData.time||''} onChange={e=>setFormData({...formData, time:e.target.value})}/></div><input className="w-full p-4 border rounded-xl" placeholder="Location" value={formData.location||''} onChange={e=>setFormData({...formData, location:e.target.value})}/><textarea className="w-full p-4 border rounded-xl" rows="3" placeholder="Description" value={formData.description||''} onChange={e=>setFormData({...formData, description:e.target.value})}/></>);
+      case 'events': return (<><input className="w-full p-4 border rounded-xl" placeholder="Title" value={formData.title||''} onChange={e=>setFormData({...formData, title:e.target.value})}/><div className="grid grid-cols-2 gap-3"><input type="date" className="p-4 border rounded-xl" value={formData.date||''} onChange={e=>setFormData({...formData, date:e.target.value})}/><input type="time" className="p-4 border rounded-xl" value={formData.time||''} onChange={e=>setFormData({...formData, time:e.target.value})}/></div><input className="w-full p-4 border rounded-xl" placeholder="Location" value={formData.location||''} onChange={e=>setFormData({...formData, location:e.target.value})}/><textarea className="w-full p-4 border rounded-xl" rows="3" placeholder="Description" value={formData.description||''} onChange={e=>setFormData({...formData, description:e.target.value})}/><FileInput label="Event Image (Optional)" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
       case 'leaders': return (<><input className="w-full p-4 border rounded-xl" placeholder="Name" value={formData.name||''} onChange={e=>setFormData({...formData, name:e.target.value})}/><input className="w-full p-4 border rounded-xl" placeholder="Role" value={formData.role||''} onChange={e=>setFormData({...formData, role:e.target.value})}/><input className="w-full p-4 border rounded-xl" placeholder="Phone" value={formData.phone||''} onChange={e=>setFormData({...formData, phone:e.target.value})}/><input className="w-full p-4 border rounded-xl" placeholder="WhatsApp Link" value={formData.whatsapp||''} onChange={e=>setFormData({...formData, whatsapp:e.target.value})}/><FileInput label="Profile Photo" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
-      case 'songs': return (<><input className="w-full p-4 border rounded-xl" placeholder="Song Title" value={formData.title||''} onChange={e=>setFormData({...formData, title:e.target.value})}/><FileInput label="1. MP3 Audio" accept="audio/*" onChange={setAudioFile} file={audioFile}/><FileInput label="2. Cover Art" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
+      case 'songs': return (<><input className="w-full p-4 border rounded-xl" placeholder="Song Title" value={formData.title||''} onChange={e=>setFormData({...formData, title:e.target.value})}/><input className="w-full p-4 border rounded-xl" placeholder="Artist Name" value={formData.artist||''} onChange={e=>setFormData({...formData, artist:e.target.value})}/><FileInput label="1. MP3 Audio" accept="audio/*" onChange={setAudioFile} file={audioFile}/><FileInput label="2. Cover Art" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
       case 'programs': return (<><div className="grid grid-cols-2 gap-3"><input className="p-4 border rounded-xl" placeholder="Day (Mon)" value={formData.day||''} onChange={e=>setFormData({...formData, day:e.target.value})}/><input className="p-4 border rounded-xl" placeholder="Title" value={formData.title||''} onChange={e=>setFormData({...formData, title:e.target.value})}/></div><textarea className="w-full p-4 border rounded-xl" placeholder="Description" rows="2" value={formData.desc||''} onChange={e=>setFormData({...formData, desc:e.target.value})}/></>);
       case 'verses': return (<><textarea className="w-full p-4 border rounded-xl" placeholder="Verse Text" rows="3" value={formData.text||''} onChange={e=>setFormData({...formData, text:e.target.value})}/><input className="w-full p-4 border rounded-xl" placeholder="Reference" value={formData.ref||''} onChange={e=>setFormData({...formData, ref:e.target.value})}/><FileInput label="Background Image" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
       case 'resources': return (<><input className="w-full p-4 border rounded-xl" placeholder="Title" value={formData.title||''} onChange={e=>setFormData({...formData, title:e.target.value})}/><FileInput label="PDF File" accept=".pdf,.doc" onChange={setSelectedFile} file={selectedFile}/></>);
-      case 'gallery': return (<><input className="w-full p-4 border rounded-xl" placeholder="Caption" value={formData.alt||''} onChange={e=>setFormData({...formData, alt:e.target.value})}/><FileInput label="Photo" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
+      case 'gallery': return (<><input className="w-full p-4 border rounded-xl" placeholder="Caption (Description)" value={formData.caption||''} onChange={e=>setFormData({...formData, caption:e.target.value})}/><FileInput label="Photo" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
       case 'testimonials': return (<><input className="w-full p-4 border rounded-xl" placeholder="Name" value={formData.name||''} onChange={e=>setFormData({...formData, name:e.target.value})}/><input className="w-full p-4 border rounded-xl" placeholder="Role" value={formData.role||''} onChange={e=>setFormData({...formData, role:e.target.value})}/><textarea className="w-full p-4 border rounded-xl" placeholder="Story" rows="3" value={formData.text||''} onChange={e=>setFormData({...formData, text:e.target.value})}/><FileInput label="Photo" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
       case 'faqs': return (<><input className="w-full p-4 border rounded-xl" placeholder="Question" value={formData.question||''} onChange={e=>setFormData({...formData, question:e.target.value})}/><textarea className="w-full p-4 border rounded-xl" placeholder="Answer" rows="3" value={formData.answer||''} onChange={e=>setFormData({...formData, answer:e.target.value})}/></>);
       default: return null;
@@ -217,7 +250,7 @@ const AdminDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {data[activeTab].map(item => (
               <div key={item.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
-                <div className="mb-4">{(item.image || item.cover || item.src) && <img src={item.image || item.cover || item.src} className="w-full h-32 object-cover rounded-xl mb-3 bg-slate-100"/>}<h4 className="font-bold text-lg text-slate-900 line-clamp-1">{item.title || item.name || item.text || item.question || "Item"}</h4><p className="text-xs text-slate-500 mt-1 line-clamp-2">{item.description || item.desc || item.role || item.answer || item.ref}</p></div>
+                <div className="mb-4">{(item.image || item.cover || item.src) && <img src={item.image || item.cover || item.src} className="w-full h-32 object-cover rounded-xl mb-3 bg-slate-100"/>}<h4 className="font-bold text-lg text-slate-900 line-clamp-1">{item.title || item.name || item.text || item.question || item.caption || "Item"}</h4><p className="text-xs text-slate-500 mt-1 line-clamp-2">{item.description || item.desc || item.role || item.answer || item.ref}</p></div>
                 <div className="flex gap-2 pt-3 border-t border-slate-50">
                   <button onClick={() => openModal(item)} className="flex-1 bg-blue-50 text-blue-600 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-1 active:bg-blue-100"><Edit2 size={16}/> Edit</button>
                   <button onClick={() => deleteItem(activeTab, item.id)} className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-1 active:bg-red-100"><Trash2 size={16}/> Delete</button>
@@ -227,27 +260,28 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* SETTINGS (Full Control) */}
+        {/* SETTINGS (Full Control - Digikadi Style) */}
         {!isLoading && activeTab === 'settings' && (
-          <div className="max-w-3xl space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm"><h3 className="font-bold text-lg mb-4 text-blue-900">General</h3><div className="space-y-4"><input className="w-full p-4 border rounded-xl mb-3" placeholder="Hero Title" value={settings.heroTitle} onChange={e=>setSettings({...settings, heroTitle:e.target.value})} /><textarea className="w-full p-4 border rounded-xl" placeholder="Hero Subtitle" value={settings.heroSubtitle} onChange={e=>setSettings({...settings, heroSubtitle:e.target.value})} /><FileInput label="Hero Background Image" accept="image/*" onChange={setSelectedFile} file={selectedFile} /></div></div>
-            
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm"><h3 className="font-bold text-lg mb-4 text-blue-900">Contacts & Schedule</h3>
-              <div className="grid grid-cols-2 gap-4 mb-4"><input className="p-4 border rounded-xl" placeholder="Email" value={settings.email} onChange={e=>setSettings({...settings, email:e.target.value})} /><input className="p-4 border rounded-xl" placeholder="Phone" value={settings.phone} onChange={e=>setSettings({...settings, phone:e.target.value})} /></div>
-              <input className="w-full p-4 border rounded-xl mb-4" placeholder="Physical Location" value={settings.location} onChange={e=>setSettings({...settings, location:e.target.value})} />
-              <div className="grid grid-cols-3 gap-3"><input className="p-4 border rounded-xl" placeholder="Days" value={settings.scheduleDays} onChange={e=>setSettings({...settings, scheduleDays:e.target.value})} /><input className="p-4 border rounded-xl" placeholder="Time" value={settings.scheduleTime} onChange={e=>setSettings({...settings, scheduleTime:e.target.value})} /><input className="p-4 border rounded-xl" placeholder="Venue" value={settings.scheduleVenue} onChange={e=>setSettings({...settings, scheduleVenue:e.target.value})} /></div>
+          <div className="max-w-4xl space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm"><h3 className="font-bold text-lg mb-4 text-blue-900">General</h3><div className="space-y-4"><input className="w-full p-4 border rounded-xl mb-3 bg-slate-50" placeholder="Hero Title" value={settings.heroTitle} onChange={e=>setSettings({...settings, heroTitle:e.target.value})} /><textarea className="w-full p-4 border rounded-xl bg-slate-50" placeholder="Hero Subtitle" value={settings.heroSubtitle} onChange={e=>setSettings({...settings, heroSubtitle:e.target.value})} /><FileInput label="Hero Background Image" accept="image/*" onChange={setSelectedFile} file={selectedFile} /></div></div>
+                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm"><h3 className="font-bold text-lg mb-4 text-blue-900">Contacts & Schedule</h3>
+                  <div className="grid grid-cols-2 gap-4 mb-4"><input className="p-4 border rounded-xl bg-slate-50" placeholder="Email" value={settings.email} onChange={e=>setSettings({...settings, email:e.target.value})} /><input className="p-4 border rounded-xl bg-slate-50" placeholder="Phone" value={settings.phone} onChange={e=>setSettings({...settings, phone:e.target.value})} /></div>
+                  <input className="w-full p-4 border rounded-xl mb-4 bg-slate-50" placeholder="Physical Location" value={settings.location} onChange={e=>setSettings({...settings, location:e.target.value})} />
+                  <div className="grid grid-cols-3 gap-3"><input className="p-4 border rounded-xl bg-slate-50" placeholder="Days" value={settings.scheduleDays} onChange={e=>setSettings({...settings, scheduleDays:e.target.value})} /><input className="p-4 border rounded-xl bg-slate-50" placeholder="Time" value={settings.scheduleTime} onChange={e=>setSettings({...settings, scheduleTime:e.target.value})} /><input className="p-4 border rounded-xl bg-slate-50" placeholder="Venue" value={settings.scheduleVenue} onChange={e=>setSettings({...settings, scheduleVenue:e.target.value})} /></div>
+                </div>
             </div>
 
             <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
               <h3 className="font-bold text-lg mb-4 text-blue-900">Social & Links</h3>
-              <div className="grid grid-cols-2 gap-4 mb-4"><input className="p-4 border rounded-xl" placeholder="WhatsApp" value={settings.whatsapp} onChange={e=>setSettings({...settings, whatsapp:e.target.value})} /><input className="p-4 border rounded-xl" placeholder="YouTube" value={settings.youtube} onChange={e=>setSettings({...settings, youtube:e.target.value})} /></div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4"><input className="p-4 border rounded-xl bg-slate-50" placeholder="WhatsApp" value={settings.whatsapp} onChange={e=>setSettings({...settings, whatsapp:e.target.value})} /><input className="p-4 border rounded-xl bg-slate-50" placeholder="YouTube" value={settings.youtube} onChange={e=>setSettings({...settings, youtube:e.target.value})} /><input className="p-4 border rounded-xl bg-slate-50" placeholder="Instagram" value={settings.instagram} onChange={e=>setSettings({...settings, instagram:e.target.value})} /><input className="p-4 border rounded-xl bg-slate-50" placeholder="TikTok" value={settings.tiktok} onChange={e=>setSettings({...settings, tiktok:e.target.value})} /></div>
               
               <div className="space-y-3 border-t pt-4">
                 <label className="text-xs font-bold text-slate-500 uppercase">Footer Links</label>
                 {settings.customLinks.map((link, i) => (
                   <div key={i} className="flex gap-2">
-                    <input className="w-1/3 p-3 border rounded-xl text-sm" placeholder="Name" value={link.name} onChange={e => updateCustomLink(i, 'name', e.target.value)} />
-                    <input className="flex-1 p-3 border rounded-xl text-sm" placeholder="URL" value={link.url} onChange={e => updateCustomLink(i, 'url', e.target.value)} />
+                    <input className="w-1/3 p-3 border rounded-xl text-sm bg-slate-50" placeholder="Name" value={link.name} onChange={e => updateCustomLink(i, 'name', e.target.value)} />
+                    <input className="flex-1 p-3 border rounded-xl text-sm bg-slate-50" placeholder="URL" value={link.url} onChange={e => updateCustomLink(i, 'url', e.target.value)} />
                     <button onClick={() => removeCustomLink(i)} className="p-3 text-red-600 bg-red-50 rounded-xl"><Trash2 size={18}/></button>
                   </div>
                 ))}
@@ -259,9 +293,43 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* OVERVIEW & MEMBERS (Logic preserved) */}
-        {!isLoading && activeTab === 'overview' && (<div className="grid grid-cols-2 gap-4"><div className="bg-white p-6 rounded-2xl shadow-sm border"><h3 className="text-xs font-bold uppercase mb-2">Members</h3><p className="text-3xl font-extrabold">{data.registrations.length}</p></div><div className="bg-white p-6 rounded-2xl shadow-sm border"><h3 className="text-xs font-bold uppercase mb-2">Events</h3><p className="text-3xl font-extrabold">{data.events.length}</p></div></div>)}
-        {!isLoading && activeTab === 'members' && (<div className="bg-white rounded-2xl border overflow-hidden"><div className="w-full overflow-x-auto"><table className="w-full text-left text-sm min-w-[800px]"><thead className="bg-slate-50 text-slate-500 uppercase"><tr><th className="p-4">Name</th><th className="p-4">Phone</th></tr></thead><tbody>{filteredMembers.map(r => (<tr key={r.id} className="border-t"><td className="p-4 font-bold">{r.firstName} {r.lastName}</td><td className="p-4">{r.phone}</td></tr>))}</tbody></table></div></div>)}
+        {/* OVERVIEW */}
+        {!isLoading && activeTab === 'overview' && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {['registrations', 'events', 'songs', 'messages'].map(key => (
+                    <div key={key} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 className="text-xs font-bold uppercase mb-2 text-slate-500">{key}</h3>
+                        <p className="text-3xl font-extrabold text-blue-900">{data[key].length}</p>
+                    </div>
+                ))}
+            </div>
+        )}
+
+        {/* MESSAGES */}
+        {!isLoading && activeTab === 'messages' && (
+            <div className="space-y-4">
+                {data.messages.length === 0 ? <p className="text-center text-slate-500 py-10">No messages yet.</p> : data.messages.map(msg => (
+                    <div key={msg.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                        <div className="flex justify-between items-start mb-2">
+                            <div>
+                                <h4 className="font-bold text-slate-900">{msg.name || 'Anonymous'}</h4>
+                                <div className="text-xs text-slate-500 flex gap-2 mt-1">
+                                    <span>{msg.email}</span> • <span>{msg.phone}</span>
+                                </div>
+                            </div>
+                            <span className="text-xs text-slate-400">{msg.createdAt ? new Date(msg.createdAt.toDate()).toLocaleDateString() : ''}</span>
+                        </div>
+                        <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-xl">{msg.message}</p>
+                        <div className="flex justify-end mt-2">
+                            <button onClick={() => deleteItem('messages', msg.id)} className="text-red-500 text-xs font-bold hover:bg-red-50 px-2 py-1 rounded">Delete</button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        )}
+
+        {/* MEMBERS */}
+        {!isLoading && activeTab === 'members' && (<div className="bg-white rounded-2xl border overflow-hidden"><div className="w-full overflow-x-auto"><table className="w-full text-left text-sm min-w-[800px]"><thead className="bg-slate-50 text-slate-500 uppercase"><tr><th className="p-4">Name</th><th className="p-4">Phone</th><th className="p-4">Ministry</th><th className="p-4">Year</th><th className="p-4 text-right">Action</th></tr></thead><tbody>{filteredMembers.map(r => (<tr key={r.id} className="border-t hover:bg-slate-50"><td className="p-4 font-bold">{r.firstName} {r.lastName}</td><td className="p-4">{r.phone}</td><td className="p-4">{r.ministry}</td><td className="p-4">{r.year}</td><td className="p-4 text-right"><button onClick={() => deleteItem('registrations', r.id)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={16}/></button></td></tr>))}</tbody></table></div></div>)}
 
         {/* FULL SCREEN MODAL */}
         {isModalOpen && (
