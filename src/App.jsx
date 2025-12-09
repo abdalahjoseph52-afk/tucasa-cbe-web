@@ -7,8 +7,9 @@ import Seo from './components/utils/Seo';
 import TucasaLogo from './components/ui/TucasaLogo';
 import { useLanguage } from './context/LanguageContext';
 import { Loader2, Lock, MapPin, Mail, Phone } from 'lucide-react';
-import { db } from './lib/firebase';
+import { db, auth } from './lib/firebase'; // Added auth import
 import { doc, onSnapshot } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth'; // Added listener
 
 import AdminDashboard from './components/admin/AdminDashboard';
 
@@ -29,16 +30,32 @@ function App() {
   const { t } = useLanguage();
   const [isAdminView, setIsAdminView] = useState(false);
   const [contactInfo, setContactInfo] = useState({});
+  const [authLoading, setAuthLoading] = useState(true); // New state to prevent flash
+
+  // 1. PERSIST ADMIN STATE ON REFRESH
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAdminView(true);
+      } else {
+        setIsAdminView(false);
+      }
+      setAuthLoading(false);
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     return onSnapshot(doc(db, "settings", "general"), (doc) => { if (doc.exists()) setContactInfo(doc.data()); });
   }, []);
 
+  if (authLoading) return <SectionLoader />; // Wait for auth check
+
   if (isAdminView) {
     return (
       <>
-        {/* FIX: Back to Site button moved to bottom right to avoid conflicts */}
-        <div className="fixed bottom-4 right-4 z-[100]">
+        {/* Back to Site Button Fixed Bottom Right */}
+        <div className="fixed bottom-4 right-4 z-[1000]">
           <button onClick={() => setIsAdminView(false)} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-2xl hover:bg-red-700 transition-colors">Back to Site</button>
         </div>
         <AdminDashboard />
@@ -65,9 +82,7 @@ function App() {
       {/* FOOTER */}
       <footer className="bg-[#0f172a] text-slate-300 pt-16 pb-8 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
           <div className="flex flex-col md:flex-row gap-10 md:gap-20 mb-12">
-            
             <div className="md:w-1/3 space-y-4">
               <div className="flex items-center gap-3">
                  <TucasaLogo className="h-12 w-auto" isFooter={true} />
@@ -76,20 +91,13 @@ function App() {
               </div>
               <p className="text-slate-400 text-sm leading-relaxed">{t('footer.brand_desc')}</p>
             </div>
-
             <div className="md:w-2/3 grid grid-cols-2 gap-8 md:gap-12">
-              
               <div>
                 <h4 className="text-white font-bold text-sm mb-4 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></span> {t('footer.quick_links')}</h4>
                 <ul className="space-y-2 text-xs md:text-sm">
-                  {[
-                    {l: t('nav.home'), h:'#home'}, {l: t('nav.programs'), h:'#programs'}, 
-                    {l: t('nav.events'), h:'#events'}, {l: t('nav.choir'), h:'#choir'},
-                    {l: t('nav.leaders'), h:'#leaders'}, {l: t('nav.contact'), h:'#contact'}
-                  ].map((item) => (<li key={item.l}><a href={item.h} className="hover:text-white transition-colors block py-1">{item.l}</a></li>))}
+                  {[{l: t('nav.home'), h:'#home'}, {l: t('nav.programs'), h:'#programs'}, {l: t('nav.events'), h:'#events'}, {l: t('nav.choir'), h:'#choir'}, {l: t('nav.leaders'), h:'#leaders'}, {l: t('nav.contact'), h:'#contact'}].map((item) => (<li key={item.l}><a href={item.h} className="hover:text-white transition-colors block py-1">{item.l}</a></li>))}
                 </ul>
               </div>
-
               <div>
                 <h4 className="text-white font-bold text-sm mb-4 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span> {t('footer.location')}</h4>
                 <ul className="space-y-3 text-xs md:text-sm">
@@ -98,19 +106,13 @@ function App() {
                   <li className="flex items-center gap-2"><Mail size={16} className="text-blue-500 shrink-0" /><span className="break-all">{contactInfo.email}</span></li>
                 </ul>
               </div>
-
             </div>
           </div>
-
           <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center text-[10px] md:text-xs text-slate-500 gap-4">
             <p>© 2025 TUCASA CBE. {t('footer.rights')}</p>
-            <div className="flex gap-4">
-               <a href="#" className="hover:text-white transition-colors">{t('footer.privacy')}</a>
-               <a href="#" className="hover:text-white transition-colors">{t('footer.terms')}</a>
-            </div>
+            <div className="flex gap-4"><a href="#" className="hover:text-white transition-colors">{t('footer.privacy')}</a><a href="#" className="hover:text-white transition-colors">{t('footer.terms')}</a></div>
             <button onClick={() => setIsAdminView(true)} className="flex items-center gap-1 hover:text-white"><Lock size={10} /> Admin</button>
           </div>
-
         </div>
       </footer>
     </div>
