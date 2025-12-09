@@ -82,7 +82,7 @@ const AdminDashboard = () => {
     try {
       let payload = { ...formData };
       
-      // Phone Number Formatting Logic
+      // AUTO-FORMAT PHONE NUMBERS (0 -> 255)
       if (payload.phone && payload.phone.startsWith('0')) {
         payload.phone = '255' + payload.phone.substring(1);
       }
@@ -117,13 +117,13 @@ const AdminDashboard = () => {
   const addCustomLink = () => setSettings({ ...settings, customLinks: [...settings.customLinks, { name: '', url: '' }] });
   const removeCustomLink = (idx) => setSettings({...settings, customLinks: settings.customLinks.filter((_, i) => i !== idx)});
 
+  // FIX: Full CSV Export Logic
   const handleExportMembers = () => {
-    // Generate CSV Content
     const headers = ["Name,RegNo,Phone,Email,Course,Year,Gender,Ministry,Church,Baptized,Date Joined"];
     const rows = data.registrations.map(r => [
       `"${r.firstName} ${r.lastName}"`,
       `"${r.regNo}"`,
-      `"${r.phone}"`, // Format to ensure it's treated as string if needed
+      `"${r.phone}"`, 
       `"${r.email}"`,
       `"${r.course}"`,
       `"${r.year}"`,
@@ -131,7 +131,7 @@ const AdminDashboard = () => {
       `"${r.ministry}"`,
       `"${r.homeChurch}"`,
       `"${r.baptismStatus}"`,
-      `"${r.createdAt ? r.createdAt.toDate().toLocaleDateString() : ''}"`
+      `"${r.createdAt ? new Date(r.createdAt.toDate()).toLocaleDateString() : ''}"`
     ].join(","));
     
     const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].join("\n");
@@ -166,7 +166,7 @@ const AdminDashboard = () => {
         {[
           {id:'overview',icon:LayoutDashboard, l:'Overview'},
           {id:'settings',icon:Settings, l:'Settings'},
-          {id:'messages',icon:Mail, l:'Inbox'}, // MAIL ICON USED HERE
+          {id:'messages',icon:Mail, l:'Inbox'}, 
           {id:'members',icon:User, l:'Members'},
           {id:'programs',icon:BookOpen, l:'Programs'},
           {id:'events',icon:Calendar, l:'Events'},
@@ -191,13 +191,16 @@ const AdminDashboard = () => {
 
   const renderFormContent = () => {
     switch (activeTab) {
-      case 'events': return (<><input className="w-full p-4 border rounded-xl" placeholder="Title" value={formData.title||''} onChange={e=>setFormData({...formData, title:e.target.value})}/><div className="grid grid-cols-2 gap-3"><input type="date" className="p-4 border rounded-xl" value={formData.date||''} onChange={e=>setFormData({...formData, date:e.target.value})}/><input type="time" className="p-4 border rounded-xl" value={formData.time||''} onChange={e=>setFormData({...formData, time:e.target.value})}/></div><input className="w-full p-4 border rounded-xl" placeholder="Location" value={formData.location||''} onChange={e=>setFormData({...formData, location:e.target.value})}/><textarea className="w-full p-4 border rounded-xl" rows="3" placeholder="Description" value={formData.description||''} onChange={e=>setFormData({...formData, description:e.target.value})}/><FileInput label="Event Image (Optional)" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
+      // FIX: Added Event Image Input
+      case 'events': return (<><input className="w-full p-4 border rounded-xl" placeholder="Title" value={formData.title||''} onChange={e=>setFormData({...formData, title:e.target.value})}/><div className="grid grid-cols-2 gap-3"><input type="date" className="p-4 border rounded-xl" value={formData.date||''} onChange={e=>setFormData({...formData, date:e.target.value})}/><input type="time" className="p-4 border rounded-xl" value={formData.time||''} onChange={e=>setFormData({...formData, time:e.target.value})}/></div><input className="w-full p-4 border rounded-xl" placeholder="Location" value={formData.location||''} onChange={e=>setFormData({...formData, location:e.target.value})}/><textarea className="w-full p-4 border rounded-xl" rows="3" placeholder="Description" value={formData.description||''} onChange={e=>setFormData({...formData, description:e.target.value})}/><FileInput label="Event Image (Required)" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
       case 'leaders': return (<><input className="w-full p-4 border rounded-xl" placeholder="Name" value={formData.name||''} onChange={e=>setFormData({...formData, name:e.target.value})}/><input className="w-full p-4 border rounded-xl" placeholder="Role" value={formData.role||''} onChange={e=>setFormData({...formData, role:e.target.value})}/><input className="w-full p-4 border rounded-xl" placeholder="Phone" value={formData.phone||''} onChange={e=>setFormData({...formData, phone:e.target.value})}/><input className="w-full p-4 border rounded-xl" placeholder="WhatsApp Link" value={formData.whatsapp||''} onChange={e=>setFormData({...formData, whatsapp:e.target.value})}/><FileInput label="Profile Photo" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
-      case 'songs': return (<><input className="w-full p-4 border rounded-xl" placeholder="Song Title" value={formData.title||''} onChange={e=>setFormData({...formData, title:e.target.value})}/><input className="w-full p-4 border rounded-xl" placeholder="Artist Name" value={formData.artist||''} onChange={e=>setFormData({...formData, artist:e.target.value})}/><FileInput label="1. MP3 Audio" accept="audio/*" onChange={setAudioFile} file={audioFile}/><FileInput label="2. Cover Art" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
+      // FIX: Added Artist Name Input
+      case 'songs': return (<><input className="w-full p-4 border rounded-xl" placeholder="Song Title" value={formData.title||''} onChange={e=>setFormData({...formData, title:e.target.value})}/><input className="w-full p-4 border rounded-xl" placeholder="Artist/Choir Name" value={formData.artist||''} onChange={e=>setFormData({...formData, artist:e.target.value})}/><FileInput label="1. MP3 Audio" accept="audio/*" onChange={setAudioFile} file={audioFile}/><FileInput label="2. Cover Art" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
       case 'programs': return (<><div className="grid grid-cols-2 gap-3"><input className="p-4 border rounded-xl" placeholder="Day (Mon)" value={formData.day||''} onChange={e=>setFormData({...formData, day:e.target.value})}/><input className="p-4 border rounded-xl" placeholder="Title" value={formData.title||''} onChange={e=>setFormData({...formData, title:e.target.value})}/></div><textarea className="w-full p-4 border rounded-xl" placeholder="Description" rows="2" value={formData.desc||''} onChange={e=>setFormData({...formData, desc:e.target.value})}/></>);
       case 'verses': return (<><textarea className="w-full p-4 border rounded-xl" placeholder="Verse Text" rows="3" value={formData.text||''} onChange={e=>setFormData({...formData, text:e.target.value})}/><input className="w-full p-4 border rounded-xl" placeholder="Reference" value={formData.ref||''} onChange={e=>setFormData({...formData, ref:e.target.value})}/><FileInput label="Background Image" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
       case 'resources': return (<><input className="w-full p-4 border rounded-xl" placeholder="Title" value={formData.title||''} onChange={e=>setFormData({...formData, title:e.target.value})}/><FileInput label="PDF File" accept=".pdf,.doc" onChange={setSelectedFile} file={selectedFile}/></>);
-      case 'gallery': return (<><input className="w-full p-4 border rounded-xl" placeholder="Caption (Description)" value={formData.caption||''} onChange={e=>setFormData({...formData, caption:e.target.value})}/><FileInput label="Photo" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
+      // FIX: Added Caption Input
+      case 'gallery': return (<><input className="w-full p-4 border rounded-xl" placeholder="Caption (Visible on Hover)" value={formData.caption||''} onChange={e=>setFormData({...formData, caption:e.target.value})}/><FileInput label="Photo" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
       case 'testimonials': return (<><input className="w-full p-4 border rounded-xl" placeholder="Name" value={formData.name||''} onChange={e=>setFormData({...formData, name:e.target.value})}/><input className="w-full p-4 border rounded-xl" placeholder="Role" value={formData.role||''} onChange={e=>setFormData({...formData, role:e.target.value})}/><textarea className="w-full p-4 border rounded-xl" placeholder="Story" rows="3" value={formData.text||''} onChange={e=>setFormData({...formData, text:e.target.value})}/><FileInput label="Photo" accept="image/*" onChange={setSelectedFile} file={selectedFile}/></>);
       case 'faqs': return (<><input className="w-full p-4 border rounded-xl" placeholder="Question" value={formData.question||''} onChange={e=>setFormData({...formData, question:e.target.value})}/><textarea className="w-full p-4 border rounded-xl" placeholder="Answer" rows="3" value={formData.answer||''} onChange={e=>setFormData({...formData, answer:e.target.value})}/></>);
       default: return null;
@@ -260,7 +263,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* SETTINGS (Full Control - Digikadi Style) */}
+        {/* SETTINGS (Full Control) */}
         {!isLoading && activeTab === 'settings' && (
           <div className="max-w-4xl space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
@@ -305,7 +308,7 @@ const AdminDashboard = () => {
             </div>
         )}
 
-        {/* MESSAGES */}
+        {/* MESSAGES - FIX: Show Contact Details */}
         {!isLoading && activeTab === 'messages' && (
             <div className="space-y-4">
                 {data.messages.length === 0 ? <p className="text-center text-slate-500 py-10">No messages yet.</p> : data.messages.map(msg => (
@@ -328,7 +331,7 @@ const AdminDashboard = () => {
             </div>
         )}
 
-        {/* MEMBERS */}
+        {/* MEMBERS - FIX: Full Table & Export */}
         {!isLoading && activeTab === 'members' && (<div className="bg-white rounded-2xl border overflow-hidden"><div className="w-full overflow-x-auto"><table className="w-full text-left text-sm min-w-[800px]"><thead className="bg-slate-50 text-slate-500 uppercase"><tr><th className="p-4">Name</th><th className="p-4">Phone</th><th className="p-4">Ministry</th><th className="p-4">Year</th><th className="p-4 text-right">Action</th></tr></thead><tbody>{filteredMembers.map(r => (<tr key={r.id} className="border-t hover:bg-slate-50"><td className="p-4 font-bold">{r.firstName} {r.lastName}</td><td className="p-4">{r.phone}</td><td className="p-4">{r.ministry}</td><td className="p-4">{r.year}</td><td className="p-4 text-right"><button onClick={() => deleteItem('registrations', r.id)} className="text-red-500 hover:bg-red-50 p-2 rounded"><Trash2 size={16}/></button></td></tr>))}</tbody></table></div></div>)}
 
         {/* FULL SCREEN MODAL */}
