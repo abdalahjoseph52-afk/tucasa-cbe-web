@@ -16,10 +16,12 @@ const Contact = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // Ensure phone format
-      let formattedPhone = formData.phone;
+      // FORCE PHONE FORMAT (0 -> 255)
+      let formattedPhone = formData.phone.trim();
       if (formattedPhone.startsWith('0')) {
         formattedPhone = '255' + formattedPhone.substring(1);
+      } else if (formattedPhone.startsWith('+255')) {
+        formattedPhone = formattedPhone.substring(1); // Remove +
       }
 
       await addDoc(collection(db, "messages"), {
@@ -28,10 +30,11 @@ const Contact = () => {
         createdAt: serverTimestamp()
       });
       
+      // Fallback text if translation fails
       success(t('contact.success') || "Ujumbe umetumwa kikamilifu!");
       setFormData({ name: '', email: '', phone: '', message: '' });
     } catch (err) {
-      error("Imeshindikana kutuma ujumbe.");
+      error("Imeshindikana kutuma ujumbe. Tafadhali jaribu tena.");
     }
     setIsSubmitting(false);
   };
@@ -40,7 +43,15 @@ const Contact = () => {
     <section id="contact" className="py-24 bg-white relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <Reveal width="100%"><span className="text-blue-600 font-bold uppercase tracking-widest text-xs">{t('contact.subtitle')}</span><h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mt-2">{t('contact.title')}</h2></Reveal>
+          <Reveal width="100%">
+            {/* FALLBACK TEXT ADDED */}
+            <span className="text-blue-600 font-bold uppercase tracking-widest text-xs">
+              {t('contact.subtitle') !== 'contact.subtitle' ? t('contact.subtitle') : 'Wasiliana Nasi'}
+            </span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mt-2">
+              {t('contact.title') !== 'contact.title' ? t('contact.title') : 'Tuma Ujumbe'}
+            </h2>
+          </Reveal>
         </div>
 
         <div className="max-w-xl mx-auto">

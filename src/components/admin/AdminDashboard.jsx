@@ -37,7 +37,7 @@ const AdminDashboard = () => {
   const [selectedMember, setSelectedMember] = useState(null);
   const [memberSearch, setMemberSearch] = useState('');
 
-  // SETTINGS
+  // SETTINGS STATE
   const [settings, setSettings] = useState({
     heroTitle: '', heroSubtitle: '', heroImage: '',
     scheduleDays: '', scheduleTime: '', scheduleVenue: '', 
@@ -77,7 +77,7 @@ const AdminDashboard = () => {
     try {
       let payload = { ...formData };
       
-      // Phone Format Logic
+      // AUTO FORMAT PHONE (0 -> 255)
       if (payload.phone && payload.phone.startsWith('0')) {
         payload.phone = '255' + payload.phone.substring(1);
       }
@@ -110,15 +110,16 @@ const AdminDashboard = () => {
   const addCustomLink = () => setSettings({ ...settings, customLinks: [...settings.customLinks, { name: '', url: '' }] });
   const removeCustomLink = (idx) => setSettings({...settings, customLinks: settings.customLinks.filter((_, i) => i !== idx)});
 
-  // FIX: ROBUST EXPORT LOGIC
+  // FIX: ROBUST CSV EXPORT (ALL FIELDS)
   const handleExportMembers = () => {
     if (data.registrations.length === 0) { error("Hakuna members wa kudownload."); return; }
     try {
-      const headers = ["Name,RegNo,Phone,Email,Course,Year,Gender,Ministry,Church,Baptized,Joined"];
+      const headers = ["FirstName,LastName,RegNo,Phone,Email,Course,Year,Gender,Ministry,HomeChurch,Baptized,DateJoined"];
       const rows = data.registrations.map(r => [
-        `"${r.firstName || ''} ${r.lastName || ''}"`,
+        `"${r.firstName || ''}"`,
+        `"${r.lastName || ''}"`,
         `"${r.regNo || ''}"`,
-        `"${r.phone || ''}"`, 
+        `"${r.phone ? (r.phone.startsWith('0') ? '255'+r.phone.substring(1) : r.phone) : ''}"`, // Force 255 in export if not already
         `"${r.email || ''}"`,
         `"${r.course || ''}"`,
         `"${r.year || ''}"`,
@@ -129,7 +130,7 @@ const AdminDashboard = () => {
         `"${r.createdAt ? new Date(r.createdAt.toDate()).toLocaleDateString() : ''}"`
       ].join(","));
       
-      const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].join("\n");
+      const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers, ...rows].join("\n");
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
@@ -238,7 +239,7 @@ const AdminDashboard = () => {
         {/* FULL SCREEN MODAL */}
         {isModalOpen && (<div className="fixed inset-0 z-[400] bg-slate-900/50 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in zoom-in duration-200" onClick={closeModal}><div className="bg-white w-full h-full md:h-auto md:max-h-[85vh] md:max-w-lg md:rounded-3xl shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}><div className="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10"><h3 className="font-extrabold text-xl text-slate-900 capitalize">{editingId ? 'Edit' : 'New'} {activeTab.slice(0, -1)}</h3><button onClick={closeModal} className="p-2 bg-slate-100 hover:bg-red-100 hover:text-red-600 rounded-full transition-colors"><X size={24}/></button></div><div className="p-4 md:p-6 overflow-y-auto flex-1 space-y-4 bg-slate-50/50">{renderFormContent()}</div><div className="p-4 md:p-6 border-t border-slate-100 bg-white sticky bottom-0 z-10 safe-area-pb"><button disabled={isSubmitting} onClick={() => handleSave(activeTab, activeTab === 'resources' ? 'link' : activeTab === 'gallery' ? 'src' : activeTab === 'songs' ? 'cover' : 'image', activeTab === 'resources' ? 'file' : 'image')} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all">{isSubmitting ? <><Loader2 className="animate-spin" size={24}/> Processing...</> : "Save Changes"}</button></div></div></div>)}
 
-        {/* VIEW MEMBER DETAILS MODAL */}
+        {/* VIEW MEMBER DETAILS MODAL (HAPA NDIPO TAARIFA ZOTE ZINAPOONEKANA) */}
         {selectedMember && (
           <div className="fixed inset-0 z-[500] bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in" onClick={() => setSelectedMember(null)}>
             <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -246,12 +247,13 @@ const AdminDashboard = () => {
                 <div><h3 className="text-xl font-bold">{selectedMember.firstName} {selectedMember.lastName}</h3><p className="text-blue-200 text-sm font-mono">{selectedMember.regNo}</p></div>
                 <button onClick={() => setSelectedMember(null)} className="p-2 hover:bg-white/20 rounded-full"><X/></button>
               </div>
-              <div className="p-6 grid grid-cols-2 gap-4 bg-slate-50">
+              <div className="p-6 grid grid-cols-2 gap-4 bg-slate-50 max-h-[70vh] overflow-y-auto">
                 <div className="bg-white p-3 rounded-xl border border-slate-100"><span className="text-xs text-slate-400 font-bold uppercase block mb-1">Phone</span>{selectedMember.phone}</div>
                 <div className="bg-white p-3 rounded-xl border border-slate-100"><span className="text-xs text-slate-400 font-bold uppercase block mb-1">Gender</span>{selectedMember.gender}</div>
                 <div className="bg-white p-3 rounded-xl border border-slate-100"><span className="text-xs text-slate-400 font-bold uppercase block mb-1">Course</span>{selectedMember.course}</div>
                 <div className="bg-white p-3 rounded-xl border border-slate-100"><span className="text-xs text-slate-400 font-bold uppercase block mb-1">Year</span>{selectedMember.year}</div>
-                <div className="bg-white p-3 rounded-xl border border-slate-100 col-span-2"><span className="text-xs text-slate-400 font-bold uppercase block mb-1">Ministry</span>{selectedMember.ministry}</div>
+                <div className="bg-white p-3 rounded-xl border border-slate-100"><span className="text-xs text-slate-400 font-bold uppercase block mb-1">Email</span>{selectedMember.email}</div>
+                <div className="bg-white p-3 rounded-xl border border-slate-100"><span className="text-xs text-slate-400 font-bold uppercase block mb-1">Ministry</span>{selectedMember.ministry}</div>
                 <div className="bg-white p-3 rounded-xl border border-slate-100 col-span-2"><span className="text-xs text-slate-400 font-bold uppercase block mb-1">Home Church</span>{selectedMember.homeChurch}</div>
                 <div className="bg-white p-3 rounded-xl border border-slate-100"><span className="text-xs text-slate-400 font-bold uppercase block mb-1">Baptized</span>{selectedMember.baptismStatus}</div>
                 <div className="bg-white p-3 rounded-xl border border-slate-100"><span className="text-xs text-slate-400 font-bold uppercase block mb-1">Date Joined</span>{selectedMember.createdAt?.toDate().toLocaleDateString()}</div>
