@@ -5,12 +5,12 @@ import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { uploadImage, uploadFile } from '../../lib/uploadService';
 import { useToast } from '../../context/ToastContext';
 
-// ICONS
+// ICONS (Nimehakikisha 'Mail' ipo hapa ili kuondoa error)
 import { 
   Lock, LogOut, User, Calendar, Trash2, Edit2, Image as ImageIcon, Loader2, 
   Users, FileText, Music, FileAudio, HelpCircle, MessageCircle, BookOpen, 
   Scroll, Settings, Save, X, Download, LayoutDashboard, Plus, UploadCloud, 
-  Star, Eye, Phone, MapPin, Menu // Nimeongeza Menu Icon
+  Star, Eye, Phone, MapPin, Link, Mail, Menu 
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -21,21 +21,21 @@ const AdminDashboard = () => {
   const [uploadStatus, setUploadStatus] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   
+  // DATA STATES
+  const [data, setData] = useState({
+    registrations: [], events: [], leaders: [], resources: [], gallery: [], 
+    songs: [], programs: [], testimonials: [], faqs: [], verses: [], messages: []
+  });
+
   // UI STATES
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // STATE YA MENU YA SIMU
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [formData, setFormData] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
   const [memberSearch, setMemberSearch] = useState('');
-
-  // DATA STATES
-  const [data, setData] = useState({
-    registrations: [], events: [], leaders: [], resources: [], gallery: [], 
-    songs: [], programs: [], testimonials: [], faqs: [], verses: [], messages: []
-  });
 
   // SETTINGS STATE
   const [settings, setSettings] = useState({
@@ -45,6 +45,7 @@ const AdminDashboard = () => {
     whatsapp: '', instagram: '', tiktok: '', youtube: '', 
     customLinks: [], paymentNumber: '', paymentName: ''
   });
+  
   const [featuredSession, setFeaturedSession] = useState({ topic: '', speaker: '', date: '', description: '', image: '' });
   const [authForm, setAuthForm] = useState({ email: '', password: '' });
 
@@ -64,13 +65,16 @@ const AdminDashboard = () => {
         
         setIsLoading(false);
         return () => unsubs.forEach(u => u());
-      } else { setIsLoading(false); }
+      } else {
+        setIsLoading(false); 
+      }
     });
     return unsubscribe;
   }, []);
 
   // --- ACTIONS ---
-  const handleLogin = async (e) => { e.preventDefault(); setIsSubmitting(true); try { await signInWithEmailAndPassword(auth, authForm.email, authForm.password); success("Umeingia!"); } catch (err) { error("Imeshindikana."); } setIsSubmitting(false); };
+  const handleLogin = async (e) => { e.preventDefault(); setIsSubmitting(true); try { await signInWithEmailAndPassword(auth, authForm.email, authForm.password); success("Logged In"); } catch (err) { error("Login Failed"); } setIsSubmitting(false); };
+  
   const handleLogout = async () => { await signOut(auth); };
 
   const handleSave = async (col, fileField = 'image', fileType = 'image') => {
@@ -80,8 +84,8 @@ const AdminDashboard = () => {
       if (selectedFile) { setUploadStatus("Uploading..."); payload[fileField] = fileType === 'image' ? await uploadImage(selectedFile) : await uploadFile(selectedFile); }
       if (col === 'songs' && audioFile) { setUploadStatus("Uploading Audio..."); payload.url = await uploadFile(audioFile); }
 
-      if (editingId) { await setDoc(doc(db, col, editingId), payload, { merge: true }); success("Imesasishwa!"); } 
-      else { await addDoc(collection(db, col), { ...payload, createdAt: serverTimestamp() }); success("Imeongezwa!"); }
+      if (editingId) { await setDoc(doc(db, col, editingId), payload, { merge: true }); success("Updated!"); } 
+      else { await addDoc(collection(db, col), { ...payload, createdAt: serverTimestamp() }); success("Created!"); }
       closeModal();
     } catch (err) { error(err.message); }
     setIsSubmitting(false); setUploadStatus('');
@@ -89,7 +93,7 @@ const AdminDashboard = () => {
 
   const openModal = (item = null) => { setFormData(item || {}); setEditingId(item ? item.id : null); setSelectedFile(null); setAudioFile(null); setIsModalOpen(true); };
   const closeModal = () => { setIsModalOpen(false); setFormData({}); setEditingId(null); };
-  const deleteItem = async (col, id) => { if(confirm("Futa kabisa?")) await deleteDoc(doc(db, col, id)); };
+  const deleteItem = async (col, id) => { if(confirm("Delete?")) await deleteDoc(doc(db, col, id)); };
   
   const handleSettingsSave = async (docName, dataObj) => { 
     setIsSubmitting(true); 
@@ -102,12 +106,15 @@ const AdminDashboard = () => {
     setIsSubmitting(false);
   };
   
-  // Custom Links Actions
+  // Custom Links Logic (Fixed Syntax)
   const updateCustomLink = (idx, field, val) => { const newLinks = settings.customLinks.map((link, i) => i === idx ? { ...link, [field]: val } : link); setSettings({...settings, customLinks: newLinks}); };
   const addCustomLink = () => setSettings({ ...settings, customLinks: [...settings.customLinks, { name: '', url: '' }] });
   const removeCustomLink = (idx) => setSettings({...settings, customLinks: settings.customLinks.filter((_, i) => i !== idx)});
 
+  const handleExportMembers = () => { success("Exporting..."); };
   const filteredMembers = data.registrations.filter(r => JSON.stringify(r).toLowerCase().includes(memberSearch.toLowerCase()));
+
+  // UI Helper
   const FileInput = ({ label, accept, onChange, file }) => (
     <div className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center hover:bg-slate-50 cursor-pointer relative bg-white">
       <input type="file" accept={accept} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={e => onChange(e.target.files[0])} />
@@ -115,19 +122,18 @@ const AdminDashboard = () => {
     </div>
   );
 
-  // --- MENU COMPONENT (Reusable for Mobile & Desktop) ---
+  // --- MENU COMPONENT (Reusable) ---
   const SidebarContent = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-white">
       <div className="p-6 border-b border-slate-100 flex justify-between items-center">
         <div><h1 className="text-xl font-extrabold text-blue-900">TUCASA Admin</h1><p className="text-xs text-slate-500 mt-1 truncate">{user?.email}</p></div>
-        {/* Close Button for Mobile Only */}
         <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden p-2 bg-slate-100 rounded-full"><X size={20}/></button>
       </div>
       <nav className="p-4 space-y-1 overflow-y-auto flex-1 custom-scrollbar">
         {[
           {id:'overview',icon:LayoutDashboard, l:'Overview'},
           {id:'settings',icon:Settings, l:'Settings'},
-          {id:'messages',icon:Mail, l:'Inbox'},
+          {id:'messages',icon:Mail, l:'Inbox'}, // MAIL ICON USED HERE
           {id:'members',icon:User, l:'Members'},
           {id:'programs',icon:BookOpen, l:'Programs'},
           {id:'events',icon:Calendar, l:'Events'},
@@ -173,7 +179,7 @@ const AdminDashboard = () => {
       {/* DESKTOP SIDEBAR */}
       <aside className="hidden md:block w-64 bg-white border-r border-slate-200 flex-shrink-0 h-screen sticky top-0 overflow-y-auto z-10"><SidebarContent /></aside>
 
-      {/* MOBILE MENU OVERLAY (DRAWER) */}
+      {/* MOBILE MENU OVERLAY (Full Drawer) */}
       {isMobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-[300] bg-slate-900/50 backdrop-blur-sm animate-in fade-in" onClick={() => setIsMobileMenuOpen(false)}>
           <div className="w-3/4 h-full bg-white shadow-2xl animate-in slide-in-from-left duration-300" onClick={e => e.stopPropagation()}>
@@ -182,7 +188,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* MOBILE HEADER (Visible on Mobile) */}
+      {/* MOBILE HEADER (Always Visible on Mobile) */}
       <div className="md:hidden fixed top-0 left-0 w-full bg-white border-b z-40 px-4 py-3 flex justify-between items-center shadow-sm">
         <div className="flex items-center gap-3">
           <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 bg-slate-100 rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600"><Menu size={24}/></button>
@@ -192,7 +198,8 @@ const AdminDashboard = () => {
       </div>
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 p-4 md:p-8 overflow-y-auto pb-40 md:pb-8 pt-20 md:pt-8">
+      <main className="flex-1 p-4 md:p-8 overflow-y-auto pb-32 md:pb-8 pt-20 md:pt-8">
+        
         {isLoading && (<div className="text-center py-24"><Loader2 size={40} className="text-blue-600 animate-spin mx-auto"/></div>)}
 
         {/* HEADER & ADD BUTTON */}
@@ -200,7 +207,7 @@ const AdminDashboard = () => {
           <div className="flex justify-between items-center mb-6 sticky top-16 md:top-0 bg-slate-50 z-30 py-2">
             <h2 className="text-2xl font-bold capitalize hidden md:block">{activeTab}</h2>
             <button onClick={() => openModal()} className="w-full md:w-auto bg-blue-600 text-white px-4 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-blue-700 active:scale-95 transition-all">
-              <Plus size={20}/> Add New {activeTab.slice(0,-1)}
+              <Plus size={20}/> <span className="hidden md:inline">Add New</span>
             </button>
           </div>
         )}
@@ -220,7 +227,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* SETTINGS (RESTORED CUSTOM LINKS & FULL CONTROL) */}
+        {/* SETTINGS (Full Control) */}
         {!isLoading && activeTab === 'settings' && (
           <div className="max-w-3xl space-y-6">
             <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm"><h3 className="font-bold text-lg mb-4 text-blue-900">General</h3><div className="space-y-4"><input className="w-full p-4 border rounded-xl mb-3" placeholder="Hero Title" value={settings.heroTitle} onChange={e=>setSettings({...settings, heroTitle:e.target.value})} /><textarea className="w-full p-4 border rounded-xl" placeholder="Hero Subtitle" value={settings.heroSubtitle} onChange={e=>setSettings({...settings, heroSubtitle:e.target.value})} /><FileInput label="Hero Background Image" accept="image/*" onChange={setSelectedFile} file={selectedFile} /></div></div>
@@ -235,7 +242,6 @@ const AdminDashboard = () => {
               <h3 className="font-bold text-lg mb-4 text-blue-900">Social & Links</h3>
               <div className="grid grid-cols-2 gap-4 mb-4"><input className="p-4 border rounded-xl" placeholder="WhatsApp" value={settings.whatsapp} onChange={e=>setSettings({...settings, whatsapp:e.target.value})} /><input className="p-4 border rounded-xl" placeholder="YouTube" value={settings.youtube} onChange={e=>setSettings({...settings, youtube:e.target.value})} /></div>
               
-              {/* CUSTOM LINKS SECTION */}
               <div className="space-y-3 border-t pt-4">
                 <label className="text-xs font-bold text-slate-500 uppercase">Footer Links</label>
                 {settings.customLinks.map((link, i) => (
@@ -257,7 +263,7 @@ const AdminDashboard = () => {
         {!isLoading && activeTab === 'overview' && (<div className="grid grid-cols-2 gap-4"><div className="bg-white p-6 rounded-2xl shadow-sm border"><h3 className="text-xs font-bold uppercase mb-2">Members</h3><p className="text-3xl font-extrabold">{data.registrations.length}</p></div><div className="bg-white p-6 rounded-2xl shadow-sm border"><h3 className="text-xs font-bold uppercase mb-2">Events</h3><p className="text-3xl font-extrabold">{data.events.length}</p></div></div>)}
         {!isLoading && activeTab === 'members' && (<div className="bg-white rounded-2xl border overflow-hidden"><div className="w-full overflow-x-auto"><table className="w-full text-left text-sm min-w-[800px]"><thead className="bg-slate-50 text-slate-500 uppercase"><tr><th className="p-4">Name</th><th className="p-4">Phone</th></tr></thead><tbody>{filteredMembers.map(r => (<tr key={r.id} className="border-t"><td className="p-4 font-bold">{r.firstName} {r.lastName}</td><td className="p-4">{r.phone}</td></tr>))}</tbody></table></div></div>)}
 
-        {/* FULL SCREEN MODAL (MOBILE OPTIMIZED) */}
+        {/* FULL SCREEN MODAL */}
         {isModalOpen && (
           <div className="fixed inset-0 z-[400] bg-slate-900/50 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 animate-in fade-in zoom-in duration-200" onClick={closeModal}>
             <div className="bg-white w-full h-full md:h-auto md:max-h-[85vh] md:max-w-lg md:rounded-3xl shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
